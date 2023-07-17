@@ -29,7 +29,7 @@ classdef LiquidityPool < handle
         function [newQ_a, newQ_b] = swap(self, token, quantity)
             % Performs a swap operation within the pool
             
-            fee = quantity * self.f;
+            fee = abs(quantity * self.f);
             
             if token.is_equal(self.T_a)
                 self.Q_a = self.Q_a + quantity;
