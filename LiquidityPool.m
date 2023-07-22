@@ -4,8 +4,8 @@ classdef LiquidityPool < handle
     properties
         T_a  Token                                                          % token A type
         T_b  Token                                                          % token B type
-        Q_a  double  {mustBePositive}                                       % initial token A balance
-        Q_b  double  {mustBePositive}                                       % initial token B balance
+        Q_a  double  {mustBePositive}                                       % token A balance
+        Q_b  double  {mustBePositive}                                       % token B balance
         f    double  {mustBeNonnegative, mustBeLessThan(f, 1)} = 0          % fee : 0 <= f < 1
         K    double                                                         % invariant : K = Q_a * Q_b
         P_a  double  {mustBePositive}                                       % token A price
@@ -31,14 +31,18 @@ classdef LiquidityPool < handle
             
             fee = abs(quantity * self.f);
             
-            if token.is_equal(self.T_a)
+            if token.is_equal(self.T_a) && (self.Q_a + quantity) > 0
                 self.Q_a = self.Q_a + quantity;
                 self.Q_b = self.K / (self.Q_a - fee);
-            elseif token.is_equal(self.T_b)
+            elseif token.is_equal(self.T_b) && (self.Q_b + quantity) > 0
                 self.Q_b = self.Q_b + quantity;
                 self.Q_a = self.K / (self.Q_b - fee);
             else
-                disp("ERROR in swap()\nwrong token type");
+                if (self.Q_a + quantity) <= 0 || (self.Q_b + quantity) <= 0
+                    error("ERROR in swap()\ntoken balance cannot be negative");
+                else
+                    error("ERROR in swap()\nwrong token type");
+                end
             end
             
             % update K (due to fees)
@@ -55,7 +59,7 @@ classdef LiquidityPool < handle
             elseif token.is_equal(self.T_b)
                 v = self.K / ((self.Q_b^2) + self.Q_b);
             else
-                disp("ERROR in getTokenValueWRTOtherToken()\nwrong token type");
+                error("ERROR in getTokenValueWRTOtherToken()\nwrong token type");
             end
         end
         
@@ -70,8 +74,7 @@ end
 
 
 
-    
-    
-    
-    
-    
+
+
+
+
