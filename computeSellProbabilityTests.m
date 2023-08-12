@@ -4,7 +4,7 @@ classdef computeSellProbabilityTests < matlab.unittest.TestCase
         function testSellProbability(TestCase)
             n = 1000;
             P1 = zeros(1, n+1);
-            P1(1) = 0.5;
+            P1(1) = 0;
             for i = 2:n+1
                 P1(i) = computeSellProbability(1, P1(i-1), 0.00001);
             end
@@ -13,7 +13,7 @@ classdef computeSellProbabilityTests < matlab.unittest.TestCase
             plot(P1);
             title("Probability in normal conditions (0.95 < price < 1.05)");
             P2 = zeros(1, n+1);
-            P2(1) = 0.5;
+            P2(1) = 0;
             price = linspace(0.95, 0.80, n+1);
             for i = 2:n+1
                 P2(i) = computeSellProbability(price(i), P2(i-1), 0.00001);

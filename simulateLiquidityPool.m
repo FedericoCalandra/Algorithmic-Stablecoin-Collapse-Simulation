@@ -1,4 +1,4 @@
-function [Q_a, Q_b, P_a, K, sellProb] = simulateLiquidityPool(n, T_a, T_b, initQ_a, ...
+function [Q_a, Q_b, P_a, K, sellQuantityProb] = simulateLiquidityPool(n, T_a, T_b, initQ_a, ...
                                                       initQ_b, fee, sigma)
 %SIMULATE LIQUIDITY POOL
 %   This function is the entry point of the simulation.
@@ -23,37 +23,25 @@ K(1) = initQ_a * initQ_b;
 Q_a = zeros(1, n+1);
 Q_b = zeros(1, n+1);
 P_a = zeros(1, n+1);
-sellProb = zeros(1, n+1);
+sellQuantityProb = zeros(1, n+1);
 
 % set initial values
 Q_a(1) = initQ_a;
 Q_b(1) = initQ_b;
 P_a(1) = (K(1) / (initQ_a^2 + initQ_a));
 
-% set the intial sell probability
-p = 0.5;
-sellProb(1) = 0.5;
+% set the intial sell quantity probability
+q = 0;
+sellQuantityProb(1) = 0;
 
 for i = 2:n+1
     
-    % compute new sell probability
-    p = computeSellProbability(pool.getTokenPrice(T_a, P_b), p, sigma);
-    sellProb(i) = p;
-    
-    % compute r (==1 -> sell, ==0 -> buy)
-    r = rand(1,1);
-    if r >= p
-        r = 1;
-    else
-        r = 0;
-    end
-    
+    % compute new quantity mean value
+    [q, newSigma] = computeSellProbability(pool.getTokenPrice(T_a, P_b), q, sigma);
+       
     % perform the swap for each sample and get new values of Q_a and Q_b
-    if r == 0
-        [Q_a(i), Q_b(i)] = pool.swap(T_a, 1);
-    else 
-        [Q_a(i), Q_b(i)] = pool.swap(T_a, -1);
-    end
+    quantity = normrnd(q, newSigma);
+    [Q_a(i), Q_b(i)] = pool.swap(T_a, quantity);
     
     % update tokenA price accordingly
     P_a(i) = pool.getTokenPrice(T_a, P_b);
