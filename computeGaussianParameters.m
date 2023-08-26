@@ -35,7 +35,11 @@ c = 400;
 mu = a * log10(x - b) + c;
 end
 
-% da implementare
+
 function newSigma = computeSigma(tokenPrice)
-newSigma = 1;
+x = abs(1 - tokenPrice);
+a = 20000;
+b = 0.04;
+c = 40000;
+newSigma = a * log10(x - b) + c;
 end

@@ -37,7 +37,7 @@ sellQuantityProb(1) = 0;
 for i = 2:n+1
     
     % compute new quantity mean value
-    [meanQuantity, newSigma] = computeSellProbability(pool.getTokenPrice(T_a, P_b), meanQuantity, sigma);
+    [meanQuantity, newSigma] = computeGaussianParameters(pool.getTokenPrice(T_a, P_b), meanQuantity, sigma);
        
     % perform the swap for each sample and get new values of Q_a and Q_b
     quantity = normrnd(meanQuantity, newSigma);
