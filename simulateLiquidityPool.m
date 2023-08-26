@@ -31,16 +31,16 @@ Q_b(1) = initQ_b;
 P_a(1) = (K(1) / (initQ_a^2 + initQ_a));
 
 % set the intial sell quantity probability
-q = 0;
+meanQuantity = 0;
 sellQuantityProb(1) = 0;
 
 for i = 2:n+1
     
     % compute new quantity mean value
-    [q, newSigma] = computeSellProbability(pool.getTokenPrice(T_a, P_b), q, sigma);
+    [meanQuantity, newSigma] = computeSellProbability(pool.getTokenPrice(T_a, P_b), meanQuantity, sigma);
        
     % perform the swap for each sample and get new values of Q_a and Q_b
-    quantity = normrnd(q, newSigma);
+    quantity = normrnd(meanQuantity, newSigma);
     [Q_a(i), Q_b(i)] = pool.swap(T_a, quantity);
     
     % update tokenA price accordingly
