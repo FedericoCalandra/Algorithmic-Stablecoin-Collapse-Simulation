@@ -2,13 +2,15 @@ classdef Token
     %TOKEN class modelling a token
     
     properties
-        Name    string
+        Name            string
+        IsStablecoin    logical
     end
     
     methods
-        function token = Token(name)
+        function token = Token(name, isStablecoin)
             %Token() Construct an instance of this class
             token.Name = name;
+            token.IsStablecoin = isStablecoin;
         end
         
         function is_eq = is_equal(self, other)
