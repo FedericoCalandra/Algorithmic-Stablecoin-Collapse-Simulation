@@ -46,7 +46,7 @@ for i = 2:n+1
     if (quantity > 0)
         [Q_a(i), Q_b(i)] = pool.swap(T_a, quantity);
     else 
-        [Q_a(i), Q_b(i)] = pool.swap(T_b, -quantity);
+        [Q_a(i), Q_b(i)] = pool.swap(T_b, quantity);
     end
     % if Q_a - quantity <= 0 do nothing
     

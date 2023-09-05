@@ -3,14 +3,16 @@ classdef Token
     
     properties
         Name            string
-        IsStablecoin    logical
+        IsStablecoin    logical = false
     end
     
     methods
-        function token = Token(name, isStablecoin)
+        function token = Token(varargin)
             %Token() Construct an instance of this class
-            token.Name = name;
-            token.IsStablecoin = isStablecoin;
+            token.Name = varargin{1};
+            if nargin > 1
+                token.IsStablecoin = varargin{2};
+            end
         end
         
         function is_eq = is_equal(self, other)
