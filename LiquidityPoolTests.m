@@ -6,12 +6,12 @@ classdef LiquidityPoolTests < matlab.unittest.TestCase
             T_b = Token("TokenB");
             Q_a = 100000;
             Q_b = 10000;
-            pool = LiquidityPool(T_a, T_b, Q_a, Q_b);            
+            pool = LiquidityPool(T_a, T_b, Q_a, Q_b);
             actValues = [pool.T_a, pool.T_b, pool.Q_a, pool.Q_b];
             expValues = [T_a, T_b, Q_a, Q_b];
             TestCase.verifyEqual(actValues, expValues);
         end
-                
+        
         function testPoolSingleTokenSwap(TestCase)
             T_a = Token("TokenA");
             T_b = Token("TokenB");
@@ -75,7 +75,6 @@ classdef LiquidityPoolTests < matlab.unittest.TestCase
             T_b = Token("TokenB");
             Q_a = 100000;
             Q_b = 10000;
-            P_b = 10;
             K = Q_a * Q_b;
             f = 0.003;
             pool = LiquidityPool(T_a, T_b, Q_a, Q_b, f);
@@ -85,6 +84,20 @@ classdef LiquidityPoolTests < matlab.unittest.TestCase
             [actQ_a, actQ_b] = pool.swap(T_a, 10);
             actValues = [actQ_a, actQ_b];
             TestCase.verifyEqual(actValues, expValues);
+        end
+        
+        function testComputeSwapValue(TestCase)
+            T_a = Token("TokenA");
+            T_b = Token("TokenB");
+            Q_a = 100000;
+            Q_b = 10000;
+            K = Q_a * Q_b;
+            pool = LiquidityPool(T_a, T_b, Q_a, Q_b);
+            
+            actValue = pool.computeSwapValue(T_a, 500);
+            expValue = Q_b - (K / (Q_a + 500));
+            TestCase.verifyEqual(actValue, expValue);
+            
         end
         
     end

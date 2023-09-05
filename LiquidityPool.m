@@ -54,7 +54,7 @@ classdef LiquidityPool < handle
         end
         
         function k = getKValue(self)
-            k = self.K;            
+            k = self.K;  
         end
         
         function v = getTokenValueWRTOtherToken(self, token)
@@ -71,6 +71,24 @@ classdef LiquidityPool < handle
             % Returns token price in this liquidity pool instance
             v = getTokenValueWRTOtherToken(self, token);
             p = v * otherTokenPrice;
+        end
+        
+        function q = computeSwapValue(self, token, quantity)
+            fee = abs(quantity * self.f);
+            
+            if token.is_equal(self.T_a) && (self.Q_a + quantity - fee) > 0
+                newQ_a = self.Q_a + quantity;
+                q = self.Q_b - self.K / (newQ_a - fee);
+            elseif token.is_equal(self.T_b) && (self.Q_b + quantity - fee) > 0
+                newQ_b = self.Q_b + quantity;
+                q = self.Q_a - self.K / (newQ_b - fee);
+            else
+                if (self.Q_a + quantity - fee) <= 0 || (self.Q_b + quantity - fee) <= 0
+                    error("ERROR in swap()\ntoken balance cannot be negative");
+                else
+                    error("ERROR in swap()\nwrong token type");
+                end
+            end
         end
         
     end
