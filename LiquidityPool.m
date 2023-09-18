@@ -31,10 +31,10 @@ classdef LiquidityPool < handle
             
             fee = abs(quantity * self.f);
             
-            if token.is_equal(self.T_a) && (self.Q_a + quantity - fee) > 0
+            if token.is_equal(self.T_a)
                 self.Q_a = self.Q_a + quantity;
                 self.Q_b = self.K / (self.Q_a - fee);
-            elseif token.is_equal(self.T_b) && (self.Q_b + quantity - fee) > 0
+            elseif token.is_equal(self.T_b)
                 self.Q_b = self.Q_b + quantity;
                 self.Q_a = self.K / (self.Q_b - fee);
             else
