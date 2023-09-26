@@ -29,25 +29,25 @@ Q_a(1) = initQ_a;
 Q_b(1) = initQ_b;
 P_a(1) = (K(1) / (initQ_a^2 + initQ_a));
 
-% set the intial sell quantity probability
-meanQuantity = 0;
+% initialize wallet distribution
+initialCapitalization = Q_a(1)*P_a(1);
+walletProbDistribution = WalletDistribution(initialCapitalization, ...
+    initialCapitalization/10);   % RIVEDERE il portafogli più ricco può avere al più 1/10 della cap tot.
+
+% initialize the random purchaise generator
+rwg = RandomWalkGenerator(pool, n, 0.5, sigma, walletProbDistribution);
 
 for i = 2:n+1
     
-    % compute new quantity mean value
-    if (T_a.IsStablecoin)
-        [meanQuantity, newSigma] = computeStablecoinGaussianParameters(pool.getTokenPrice(T_a, P_b), meanQuantity, sigma);
-    else
-        [meanQuantity, newSigma] = computeGenericTokenGaussianParameters(meanQuantity, sigma);
-    end
-       
+    % get token and quantity to be swapped
+    [token, quantity] = rwg.generate();
+    
+    % 0. determine p, 1. choose wallet, 2. sell/buy Ta, 3. choose q (based 
+    % on wallet availability, 4. swap
+    
     % perform the swap for each sample and get new values of Q_a and Q_b
-    quantity = normrnd(meanQuantity, newSigma);
-    if (quantity > 0)
-        [Q_a(i), Q_b(i)] = pool.swap(T_a, quantity);
-    else 
-        [Q_a(i), Q_b(i)] = pool.swap(T_b, -quantity);
-    end
+    [Q_a(i), Q_b(i)] = pool.swap(token, quantity);
+    
     % if Q_a - quantity <= 0 do nothing
     
     % update tokenA price accordingly

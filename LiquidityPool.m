@@ -8,8 +8,6 @@ classdef LiquidityPool < handle
         Q_b  double  {mustBePositive}                                       % token B balance
         f    double  {mustBeNonnegative, mustBeLessThan(f, 1)} = 0          % fee : 0 <= f < 1
         K    double                                                         % invariant : K = Q_a * Q_b
-        P_a  double  {mustBePositive}                                       % token A price
-        P_b  double  {mustBePositive}                                       % token B price
     end
     
     methods
