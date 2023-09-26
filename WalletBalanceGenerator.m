@@ -1,4 +1,4 @@
-classdef WalletBalanceGenerator
+classdef WalletBalanceGenerator < handle
     % This is the random wallet balance generator
     %   At every iteration of the simulation, one wallet is randomly
     %   choosen. The wallet is rapresented by a double indicating the token
@@ -16,7 +16,7 @@ classdef WalletBalanceGenerator
     end
     
     methods
-        function walletDistribution = WalletDistribution(initialCapitalization, ...
+        function walletDistribution = WalletBalanceGenerator(initialCapitalization, ...
                 maxAvailability, pretruncatedMean, pretruncatedSD)
             % PARAMS
             %   initial capitalization              - double
