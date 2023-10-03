@@ -1,5 +1,5 @@
-function [Q_a, Q_b, P_a, K] = simulateLiquidityPool(n, T_a, T_b, initQ_a, ...
-                                                      initQ_b, fee, sigma)
+function [Q_a, Q_b, P_a, K, P] = simulateLiquidityPool(n, T_a, T_b, initQ_a, ...
+    initQ_b, fee, sigma)
 %SIMULATE LIQUIDITY POOL
 %   This function is the entry point of the simulation.
 %   Input:  n                -> number of samples (swaps)
@@ -30,25 +30,33 @@ Q_b(1) = initQ_b;
 P_a(1) = (K(1) / (initQ_a^2 + initQ_a));
 
 % initialize wallet distribution
-initialCapitalization = Q_a(1)*P_a(1);
-walletProbDistribution = WalletDistribution(initialCapitalization, ...
-    initialCapitalization/10);   % RIVEDERE il portafogli più ricco può avere al più 1/10 della cap tot.
+initialFreeTokenSupply = 1*Q_a(1);
+maxBalance = initialFreeTokenSupply/3;
+walletProbDistribution = WalletBalanceGenerator(initialFreeTokenSupply, ...
+    maxBalance, 0, maxBalance/100);   % RIVEDERE il portafogli più ricco può avere al più 1/3 della cap tot.
 
 % initialize the random purchaise generator
-rwg = RandomWalkGenerator(pool, n, 0.5, sigma, walletProbDistribution);
+initialProbability = 0.5;
+purchaseGenerator = PurchaseGenerator(pool, n, initialProbability, sigma, walletProbDistribution);
+
+totalFreeTa = initQ_a;
 
 for i = 2:n+1
     
     % get token and quantity to be swapped
-    [token, quantity] = rwg.generate();
-    
-    % 0. determine p, 1. choose wallet, 2. sell/buy Ta, 3. choose q (based 
-    % on wallet availability, 4. swap
+    [token, quantity] = purchaseGenerator.rndPurchase(totalFreeTa);
     
     % perform the swap for each sample and get new values of Q_a and Q_b
     [Q_a(i), Q_b(i)] = pool.swap(token, quantity);
     
-    % if Q_a - quantity <= 0 do nothing
+    % introdurre la var totalFreeTa: the total number of T_a outside the pool in a precise moment
+    % deve diventare via via meno probabile una vendita di T_a quando
+    % totalTaSupply va a zero
+    if (token.is_equal(T_a))
+        totalFreeTa = totalFreeTa - (Q_a(i) - Q_a(i-1));
+    else
+        totalFreeTa = totalFreeTa + (Q_a(i-1) - Q_a(i));
+    end
     
     % update tokenA price accordingly
     P_a(i) = pool.getTokenPrice(T_a, P_b);
@@ -57,6 +65,8 @@ for i = 2:n+1
     K(i) = pool.getKValue();
     
 end
+
+P = purchaseGenerator.P;
 
 end
 
