@@ -1,5 +1,5 @@
 classdef WalletBalanceGenerator < handle
-    % This is the random wallet balance generator
+    %   This is the random wallet balance generator
     %   At every iteration of the simulation, one wallet is randomly
     %   choosen. The wallet is rapresented by a double indicating the token
     %   availability (this parameter is used to determine the maximum
@@ -7,8 +7,7 @@ classdef WalletBalanceGenerator < handle
     %   A truncated normal distribution is used
     
     properties
-        Capitalization               double
-        Wallets                      double
+        TotalTokenSupply             double
         PretruncMean                 double
         PretruncSD                   double
         Max                          double
@@ -16,16 +15,16 @@ classdef WalletBalanceGenerator < handle
     end
     
     methods
-        function walletDistribution = WalletBalanceGenerator(initialCapitalization, ...
-                maxAvailability, pretruncatedMean, pretruncatedSD)
+        function walletDistribution = WalletBalanceGenerator(totalFreeTokenSupply, ...
+                maximumBalance, pretruncatedMean, pretruncatedSD)
             % PARAMS
-            %   initial capitalization              - double
+            %   total free token supply             - double
             %   maximum wallet availability         - double
             %   pretruncated mean                   - double
             %   pretruncated standard deviation     - double
             
-            walletDistribution.Capitalization = initialCapitalization;
-            walletDistribution.Max = maxAvailability;
+            walletDistribution.TotalTokenSupply = totalFreeTokenSupply;
+            walletDistribution.Max = maximumBalance;
             walletDistribution.PretruncMean = pretruncatedMean;
             walletDistribution.PretruncSD = pretruncatedSD;
             walletDistribution.TND = walletDistribution.computeTruncatedNormalDistribution();

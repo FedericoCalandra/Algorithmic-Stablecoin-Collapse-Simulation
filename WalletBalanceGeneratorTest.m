@@ -2,10 +2,10 @@ classdef WalletBalanceGeneratorTest < matlab.unittest.TestCase
     
     methods (Test)
         function testWalletDistributionInitialization(TestCase)
-            C = 1000000000;
+            C = 1000000;
             max = 100000000;
             distr = WalletBalanceGenerator(C, max, max/4, max/3);
-            TestCase.verifyEqual(distr.Capitalization, C);
+            TestCase.verifyEqual(distr.TotalTokenSupply, C);
             TestCase.verifyEqual(distr.Max, max);
         end
         
@@ -14,10 +14,10 @@ classdef WalletBalanceGeneratorTest < matlab.unittest.TestCase
             % a set of randomly generated wallets
             C = 1000000000;
             max = 100000000;
-            distr = WalletBalanceGenerator(C, max, max/4, max/3);
+            distr = WalletBalanceGenerator(C, max, 0, max/100);
             
             % choose number of random wallets to consider
-            n = 10000;
+            n = 100000;
             
             x = zeros(1, n);
             for i = 1:n
