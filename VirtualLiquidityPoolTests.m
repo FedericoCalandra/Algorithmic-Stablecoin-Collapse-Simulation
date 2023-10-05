@@ -88,6 +88,21 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             expValue = 3.0;
             TestCase.verifyEqual(actValue, expValue);
         end
+        
+        function testPoolReplenishing(TestCase)
+            T_stable = Token("TokenA");
+            T_volatile = Token("TokenB");
+            BasePool = 10000;
+            P_volatile = 10;
+            PoolRecoveryPeriod = 2;
+            pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
+                BasePool, PoolRecoveryPeriod);
+            pool.swap(T_stable, 10);
+            pool.swap(T_stable, 0);
+            deltaExpected = 5;
+            delta = pool.Delta;
+            TestCase.verifyEqual(delta, deltaExpected);
+        end
     end
     
 end
