@@ -6,7 +6,7 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 0.1;
+            PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
             actValues = [pool.T_stable, pool.T_volatile, pool.BasePool, ...
@@ -20,28 +20,28 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 0.1;
+            PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
             K = BasePool^2;
             expValue = 1;
-            delta = pool.swap(T_stable, 1);
-            actValue = delta;
+            pool.swap(T_stable, 1);
+            actValue = pool.Delta;
             TestCase.verifyEqual(actValue, expValue);
         end
         
-        function testPoolSwap(TestCase)
+        function testPoolSwapReturnedValue(TestCase)
             T_stable = Token("TokenA");
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 0.1;
+            PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
-            K = BasePool^2;
-            expValue = 100;
-            delta = pool.swap(T_stable, 100);
-            actValue = delta;
+            K = BasePool^2 * P_volatile;
+            expValue = (K / (BasePool * P_volatile)) - (K / (BasePool * P_volatile + 100));
+            [~, q] = pool.swap(T_stable, 100);
+            actValue = q;
             TestCase.verifyEqual(actValue, expValue);
         end
         
@@ -50,13 +50,14 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 0.5;
+            PoolRecoveryPeriod = 36;
+            quantity = 2;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
-            expValue = 7 - 2*PoolRecoveryPeriod;
-            pool.swap(T_stable, 2);
-            delta = pool.swap(T_stable, 5);
-            actValue = delta;
+            expValue = 2 * quantity;
+            pool.swap(T_stable, quantity);
+            pool.swap(T_stable, quantity);
+            actValue = pool.Delta;
             TestCase.verifyEqual(actValue, expValue);
         end
         
@@ -65,7 +66,7 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 0.5;
+            PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
             [token, quantity] = pool.computeSwapValue(T_volatile, 1);
@@ -80,7 +81,7 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 0.5;
+            PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
             pool.updateVolatileTokenPrice(3.0);
@@ -94,12 +95,14 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             T_volatile = Token("TokenB");
             BasePool = 10000;
             P_volatile = 10;
-            PoolRecoveryPeriod = 2;
+            PoolRecoveryPeriod = 3;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
-            pool.swap(T_stable, 10);
+            pool.swap(T_stable, 12);
             pool.swap(T_stable, 0);
-            deltaExpected = 5;
+            pool.swap(T_stable, 0);
+            pool.restoreDelta();
+            deltaExpected = 8;
             delta = pool.Delta;
             TestCase.verifyEqual(delta, deltaExpected);
         end

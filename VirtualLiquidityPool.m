@@ -8,7 +8,7 @@ classdef VirtualLiquidityPool < handle
         Delta                   double                                                           % the difference between the current T_stable pool size and its original base size
         K                       double                                                           % invariant : K = BasePool^2 * P_volatile
         BasePool                double {mustBeNonnegative}                                       % initial starting size of both pools
-        PoolRecoveryPeriod      {mustBeNonnegative}                                              % used to bring delta to zero: e.g. if =2 will bring delta to zero every 2 swaps
+        PoolRecoveryPeriod      {mustBeNonnegative}                                              % used to bring delta to zero: e.g. if =2 will bring delta to zero every 2 blocks
         MinSpread               double {mustBeNonnegative, mustBeLessThan(MinSpread, 1)} = 0     % minimum value of the spread tax
         RestoreValues           double                                                           % used to bring delta back to 0
     end
@@ -36,17 +36,18 @@ classdef VirtualLiquidityPool < handle
                 error("ERROR in swap()\nswap quantity cannot be negative");
             end
             
-            restoreDelta(self);
-            poolVolatile = self.BasePool^2 / (self.BasePool + self.Delta);
+            poolStable = self.BasePool + self.Delta;
+            poolVolatile = self.K / poolStable;
             
             if token.is_equal(self.T_stable)
                 outToken = self.T_volatile;
-                outQuantity = quantity;
-                self.updateDelta(outQuantity);
+                outQuantity = (self.K / (poolStable * self.P_volatile)) - ...
+                              (self.K / (poolStable * self.P_volatile + quantity));
+                self.updateDelta(quantity);
             elseif token.is_equal(self.T_volatile)
                 outToken = self.T_stable;
-                outQuantity = self.K / ((poolVolatile + quantity) * pool.P_volatile);
-                self.updateDelta(-outQuantity);
+                outQuantity = (self.K / poolVolatile) - (self.K / (poolVolatile + quantity));
+                self.updateDelta(-outQuantity / self.P_volatile);
             else
                 if (self.BasePool + self.Delta + quantity) <= 0 || (poolVolatile + quantity) <= 0
                     error("ERROR in swap()\ntoken balance cannot be negative");
@@ -58,7 +59,7 @@ classdef VirtualLiquidityPool < handle
         end
         
         function restoreDelta(self)
-            % update delta value at every swap
+            % update delta value
             self.Delta = self.Delta - self.RestoreValues(1);
             self.RestoreValues(self.PoolRecoveryPeriod) = 0;
         end
@@ -92,7 +93,6 @@ classdef VirtualLiquidityPool < handle
             
             self.P_volatile = newPrice;
         end
-        
         
     end
     
