@@ -42,7 +42,7 @@ classdef VirtualLiquidityPool < handle
             if token.is_equal(self.T_stable)
                 outToken = self.T_volatile;
                 outQuantity = (self.K / (poolStable * self.P_volatile)) - ...
-                              (self.K / (poolStable * self.P_volatile + quantity));
+                    (self.K / (poolStable * self.P_volatile + quantity));
                 self.updateDelta(quantity);
             elseif token.is_equal(self.T_volatile)
                 outToken = self.T_stable;
@@ -61,12 +61,18 @@ classdef VirtualLiquidityPool < handle
         function restoreDelta(self)
             % update delta value
             self.Delta = self.Delta - self.RestoreValues(1);
-            self.RestoreValues(self.PoolRecoveryPeriod) = 0;
+            self.RestoreValues(1) = 0;
+            self.RestoreValues = circshift(self.RestoreValues, [0, -1]);
         end
         
         function updateDelta(self, deltaVariation)
             self.Delta = self.Delta + deltaVariation;
             self.RestoreValues = self.RestoreValues + (deltaVariation / self.PoolRecoveryPeriod);
+        end
+        
+        function resetReplenishingSystem(self)
+            self.Delta = 0;
+            self.RestoreValues = zeros(1, self.PoolRecoveryPeriod);
         end
         
         function [outputToken, outputQuantity] = computeSwapValue(self, token, quantity)

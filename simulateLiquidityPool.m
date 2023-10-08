@@ -49,16 +49,13 @@ for i = 2:n+1
     % perform the swap for each sample and get new values of Q_a and Q_b
     [Q_a(i), Q_b(i)] = pool.swap(token, quantity);
     
-    % introdurre la var totalFreeTa: the total number of T_a outside the pool in a precise moment
-    % deve diventare via via meno probabile una vendita di T_a quando
-    % totalTaSupply va a zero
     if (token.is_equal(T_a))
         totalFreeTa = totalFreeTa - (Q_a(i) - Q_a(i-1));
     else
         totalFreeTa = totalFreeTa + (Q_a(i-1) - Q_a(i));
     end
     
-    % update tokenA price accordingly
+    % update tokenA price
     P_a(i) = pool.getTokenPrice(T_a, P_b);
     
     % update K
