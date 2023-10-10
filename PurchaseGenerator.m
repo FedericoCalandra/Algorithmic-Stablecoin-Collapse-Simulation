@@ -15,7 +15,7 @@ classdef PurchaseGenerator < handle
     
     methods
         function generator = PurchaseGenerator(liquidityPool, length, ...
-                initialP, initialSigma, walletBalanceGeneraotr)
+                initialP, initialSigma, walletBalanceGenerator)
             % PARAMS
             %   liquidity pool                      - LiquidityPool
             %   number of simulation iterations     - decimal
@@ -28,8 +28,8 @@ classdef PurchaseGenerator < handle
             generator.P(1) = initialP;
             generator.sigma = initialSigma;
             generator.i = 1;
-            generator.WalletBalanceGenerator = walletBalanceGeneraotr;
-            generator.TotalInitialFreeTokenSupply = walletBalanceGeneraotr.TotalTokenSupply;
+            generator.WalletBalanceGenerator = walletBalanceGenerator;
+            generator.TotalInitialFreeTokenSupply = walletBalanceGenerator.TotalTokenSupply;
         end
         
         function [token, quantity] = rndPurchase(self, totalFreeTokenSupply)
@@ -94,13 +94,12 @@ classdef PurchaseGenerator < handle
             
         end
         
-        % DA QUA --------------------------------------------------------------------------
         function quantity = generateRandomQuantity(self, smoothFactor)
             % select a random wallet from the wallets distribution
             randomWalletBalance = self.WalletBalanceGenerator.rndWalletBalance() * smoothFactor;
             
             % set sigma
-            sigmaQuantity = randomWalletBalance/100;                                % RIVEDERE sigma
+            sigmaQuantity = randomWalletBalance/100;
             % if stablecoin, compute price deviation from peg
             if (self.Pool.T_a.IsStablecoin == true)
                 % get price deviation from peg
