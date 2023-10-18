@@ -75,7 +75,7 @@ classdef VirtualLiquidityPool < handle
             self.RestoreValues = zeros(1, self.PoolRecoveryPeriod);
         end
         
-        function [outputToken, outputQuantity] = computeSwapValue(self, token, quantity)
+        function outputQuantity = computeSwapValue(self, token, quantity)
             % compute the output value for a swap of specified quantity
             if (quantity < 0)
                 error("ERROR in swap()\nswap quantity cannot be negative");

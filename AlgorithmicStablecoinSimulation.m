@@ -4,6 +4,7 @@ classdef AlgorithmicStablecoinSimulation < handle
     properties
         T_a                                         Token
         T_b                                         Token
+        USDC                                        Token
         FreeT_a                                     double
         TotalT_a                                    double
         FreeT_b                                     double
@@ -12,7 +13,7 @@ classdef AlgorithmicStablecoinSimulation < handle
         PoolVolatile                                LiquidityPool
         VirtualPool                                 VirtualLiquidityPool
         NumberOfIterations                          int64
-        Sigma                                       double
+        Sigma                                       double = 0.001
         PoolFee                                     double = 0.03
         WalletDistribution_stable                   WalletBalanceGenerator
         WalletDistribution_volatile                 WalletBalanceGenerator
@@ -42,13 +43,19 @@ classdef AlgorithmicStablecoinSimulation < handle
         
         function initializePools(self)
             % create 2 pools (T_a - USDC and T_b - USDC) and one virtual
-            % pool (T_a - T_b) for the signorage process
+            % pool (T_a - T_b) for the seigniorage process
             
             Q_a = self.TotalT_a - self.FreeT_a;
             Q_b = self.TotalT_b - self.FreeT_b;
-            USDC = Token("USDC", true, 1);
-            self.PoolStable = LiquidityPool(self.T_a, USDC, Q_a, Q_b, self.PoolFee);
-            self.PoolVolatile = LiquidityPool(self.T_b, USDC, Q_a, Q_b, self.PoolFee);
+            self.USDC = Token("USDC", true, 1);
+            self.PoolStable = LiquidityPool(self.T_a, self.USDC, Q_a, Q_b, self.PoolFee);
+            self.PoolVolatile = LiquidityPool(self.T_b, self.USDC, Q_a, Q_b, self.PoolFee);
+            
+            basePool = 10000;           % RIVEDERE
+            poolRecoveryPeriod = 36;
+            self.VirtualPool = VirtualLiquidityPool(self.T_a, self.T_b, ...
+                self.PoolVolatile.getTokenPrice(self.T_b, 1), basePool, ...
+                poolRecoveryPeriod);
         end
         
         function initializeWalletDistributions(self)
@@ -79,22 +86,57 @@ classdef AlgorithmicStablecoinSimulation < handle
             % main loop
             for i = 1:self.NumberOfIterations
                 
-                % stable pool
-                [token, quantity] = purchaseGenerator.rndPurchase(self.FreeTa);
-                Q_a_prev = self.PoolStable.Q_a;
-                self.PoolStable.swap(token, quantity);
-                self.updateFreeTa(token, Q_a_prev);
-                
-                % volatile pool
-                [token, quantity] = purchaseGenerator.rndPurchase(self.FreeTb);
-                Q_b_prev = self.PoolStable.Q_b;
-                self.PoolStable.swap(token, quantity);
-                self.updateFreeTb(token, Q_b_prev);
+                self.stablePoolRandomPurchase();
+                self.volatilePoolRandomPurchase();
+                self.virtualPoolArbitrage();               
                 
             end
         end
         
-        function updateFreeTa(self, token, Q_a_prev)
+        function stablePoolRandomPurchase(self)
+            % stable pool random purchase
+            [token, quantity] = self.PurchaseGenerator_poolStable.rndPurchase(self.FreeT_a);
+            T_aInPool_old = self.PoolStable.Q_a;
+            self.PoolStable.swap(token, quantity);
+            self.updateFreeT_a(token, T_aInPool_old);
+        end
+        
+        function volatilePoolRandomPurchase(self)
+            % volatile pool random purchase
+            [token, quantity] = self.PurchaseGenerator_poolVolatile.rndPurchase(self.FreeT_b);
+            T_bInPool_old = self.PoolVolatile.Q_a;
+            self.PoolStable.swap(token, quantity);
+            self.updateFreeT_b(token, T_bInPool_old);
+        end
+        
+        function virtualPoolArbitrage(self)
+            % virtual pool arbitrage
+            % The arbitrage operation is deterministic.
+            % 1. a wallet is ramdomly choosen
+            % 2. if there is an arbitrage opportunity, it is exploited
+            % 3. the maximum amount of tokens used in the operation depends
+            %    by the balance of the wallet
+            
+            
+        end
+        
+        function yield = getArbitrageYield1(self)
+            % quanto si può guadagnare immettendo 1USDC nello StablePool?
+            x = self.PoolStable.computeSwapValue(self.USDC, 1);
+            y = self.VirtualPool.computeSwapValue(self.T_a, x);
+            USDC_out = self.PoolVolatile.computeSwapValue(self.T_b, y);
+            yield = USDC_out - 1;
+        end
+        
+        function yield = getArbitrageYield2(self)
+            % quanto si può guadagnare immettendo 1USDC nel VolatilePool?
+            x = self.PoolVolatile.computeSwapValue(self.USDC, 1);
+            y = self.VirtualPool.computeSwapValue(self.T_b, x);
+            USDC_out = self.PoolStable.computeSwapValue(self.T_a, y);
+            yield = USDC_out - 1;
+        end
+        
+        function updateFreeT_a(self, token, Q_a_prev)
             if (token.is_equal(self.PoolStable.T_a))
                 self.FreeT_a = self.FreeT_a - (self.PoolStable.Q_a - Q_a_prev);
             else
@@ -102,9 +144,9 @@ classdef AlgorithmicStablecoinSimulation < handle
             end
         end
         
-        function updateFreeTb(self, token, Q_b_prev)
+        function updateFreeT_b(self, token, Q_b_prev)
             if (token.is_equal(self.PoolVolatile.T_a))
-                self.FreeT_b = self.FreeT_b - (self.PoolStable.Q_a - Q_b_prev);
+                self.FreeT_b = self.FreeT_b - (self.PoolVolatile.Q_a - Q_b_prev);
             else
                 self.FreeT_b = self.FreeT_b + (Q_b_prev - self.PoolStable.Q_a);
             end
