@@ -24,16 +24,20 @@ classdef LiquidityPool < handle
             pool.K = pool.Q_a * pool.Q_b;
         end
         
-        function [newQ_a, newQ_b] = swap(self, token, quantity)
+        function [token, quantity] = swap(self, token, quantity)
             % Performs a swap operation within the pool
             
             fee = abs(quantity * self.f);
             
             if token.is_equal(self.T_a)
+                token = self.T_b;
                 self.Q_a = self.Q_a + quantity;
+                quantity = self.Q_b - self.K / (self.Q_a - fee);
                 self.Q_b = self.K / (self.Q_a - fee);
             elseif token.is_equal(self.T_b)
+                token = self.T_a;
                 self.Q_b = self.Q_b + quantity;
+                quantity = self.Q_a - self.K / (self.Q_b - fee);
                 self.Q_a = self.K / (self.Q_b - fee);
             else
                 if (self.Q_a + quantity - fee) <= 0 || (self.Q_b + quantity - fee) <= 0
@@ -45,10 +49,6 @@ classdef LiquidityPool < handle
             
             % update K (due to fees)
             self.K = self.Q_a * self.Q_b;
-            
-            % output
-            newQ_a = self.Q_a;
-            newQ_b = self.Q_b;
         end
         
         function k = getKValue(self)

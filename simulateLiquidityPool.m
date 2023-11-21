@@ -31,23 +31,25 @@ P_a(1) = (K(1) / (initQ_a^2 + initQ_a));
 
 % initialize wallet distribution
 initialFreeTokenSupply = 1*Q_a(1);
-maxBalance = initialFreeTokenSupply/3;
-walletProbDistribution = WalletBalanceGenerator(initialFreeTokenSupply, ...
-    maxBalance, 0, maxBalance/100);   % RIVEDERE il portafogli più ricco può avere al più 1/3 della cap tot.
+walletProbDistribution = WalletBalanceGenerator(initialFreeTokenSupply, 0.001);
 
 % initialize the random purchaise generator
 initialProbability = 0.5;
 purchaseGenerator = PurchaseGenerator(pool, n, initialProbability, sigma, walletProbDistribution);
 
 totalFreeTa = initQ_a;
+totalT_a = initQ_a * 2;
 
 for i = 2:n+1
     
     % get token and quantity to be swapped
-    [token, quantity] = purchaseGenerator.rndPurchase(totalFreeTa);
+    [token, quantity] = purchaseGenerator.rndPurchase(totalFreeTa, totalT_a);
     
     % perform the swap for each sample and get new values of Q_a and Q_b
-    [Q_a(i), Q_b(i)] = pool.swap(token, quantity);
+    pool.swap(token, quantity);
+
+    Q_a(i) = pool.Q_a;
+    Q_b(i) = pool.Q_b;
     
     if (token.is_equal(T_a))
         totalFreeTa = totalFreeTa - (Q_a(i) - Q_a(i-1));

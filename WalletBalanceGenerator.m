@@ -1,47 +1,38 @@
 classdef WalletBalanceGenerator < handle
     %   This is the random wallet balance generator
     %   At every iteration of the simulation, one wallet is randomly
-    %   choosen. The wallet is rapresented by a double indicating the token
+    %   chosen. The wallet is represented by a double indicating the token
     %   availability (this parameter is used to determine the maximum
     %   spending capacity of the user)
-    %   A truncated normal distribution is used
+    %   An exponential distribution is used
     
     properties
         TotalTokenSupply             double
-        PretruncMean                 double
-        PretruncSD                   double
-        Max                          double
-        TND                                         % truncated normal distribution
+        Rate                         double  % Rate parameter for exponential distribution
+        ExpDistribution              % Exponential distribution
     end
     
     methods
-        function walletDistribution = WalletBalanceGenerator(totalFreeTokenSupply, ...
-                maximumBalance, pretruncatedMean, pretruncatedSD)
+        function walletDistribution = WalletBalanceGenerator(totalFreeTokenSupply, rate)
             % PARAMS
             %   total free token supply             - double
-            %   maximum wallet availability         - double
-            %   pretruncated mean                   - double
-            %   pretruncated standard deviation     - double
+            %   rate (for exponential distribution) - double
             
             walletDistribution.TotalTokenSupply = totalFreeTokenSupply;
-            walletDistribution.Max = maximumBalance;
-            walletDistribution.PretruncMean = pretruncatedMean;
-            walletDistribution.PretruncSD = pretruncatedSD;
-            walletDistribution.TND = walletDistribution.computeTruncatedNormalDistribution();
+            walletDistribution.Rate = rate;
+            walletDistribution.ExpDistribution = walletDistribution.computeExponentialDistribution();
         end
         
         function randomWalletBalance = rndWalletBalance(self)
-            % A wallet is randomly choosen
-            randomWalletBalance = random(self.TND, 1, 1);
+            % A wallet is randomly chosen
+            randomWalletBalance = random(self.ExpDistribution, 1, 1);
         end
         
-        function distr = computeTruncatedNormalDistribution(self)
-            % Compute the truncated normal distribution with given params
-            untruncated = makedist('Normal', self.PretruncMean, self.PretruncSD);
-            truncated = truncate(untruncated, 0, self.Max);
-            distr = truncated;
+        function distr = computeExponentialDistribution(self)
+            % Compute the exponential distribution with given rate
+            distr = makedist('Exponential', 'mu', 1/self.Rate);
         end
-        
     end
 end
+
 

@@ -26,27 +26,20 @@ classdef VirtualLiquidityPool < handle
             end
             
             pool.Delta = 0;
-            pool.K = pool.BasePool^2 * pool.P_volatile;
+            pool.K = pool.BasePool^2;
             pool.RestoreValues = zeros(1, pool.PoolRecoveryPeriod);
         end
         
         function [outToken, outQuantity] = swap(self, token, quantity)
             % Performs a swap operation within the virtual pool
-            if (quantity < 0)
-                error("ERROR in swap()\nswap quantity cannot be negative");
-            end
-            
-            poolStable = self.BasePool + self.Delta;
-            poolVolatile = self.K / poolStable;
-            
+
+            outQuantity = self.computeSwapValue(token, quantity);
+
             if token.is_equal(self.T_stable)
                 outToken = self.T_volatile;
-                outQuantity = (self.K / (poolStable * self.P_volatile)) - ...
-                    (self.K / (poolStable * self.P_volatile + quantity));
                 self.updateDelta(quantity);
             elseif token.is_equal(self.T_volatile)
                 outToken = self.T_stable;
-                outQuantity = (self.K / poolVolatile) - (self.K / (poolVolatile + quantity));
                 self.updateDelta(-outQuantity / self.P_volatile);
             else
                 if (self.BasePool + self.Delta + quantity) <= 0 || (poolVolatile + quantity) <= 0
@@ -67,7 +60,7 @@ classdef VirtualLiquidityPool < handle
         
         function updateDelta(self, deltaVariation)
             self.Delta = self.Delta + deltaVariation;
-            self.RestoreValues = self.RestoreValues + (deltaVariation / self.PoolRecoveryPeriod);
+            self.RestoreValues = self.RestoreValues + (deltaVariation / double(self.PoolRecoveryPeriod));
         end
         
         function resetReplenishingSystem(self)
@@ -75,20 +68,24 @@ classdef VirtualLiquidityPool < handle
             self.RestoreValues = zeros(1, self.PoolRecoveryPeriod);
         end
         
-        function outputQuantity = computeSwapValue(self, token, quantity)
+        function outQuantity = computeSwapValue(self, token, quantity)
             % compute the output value for a swap of specified quantity
             if (quantity < 0)
                 error("ERROR in swap()\nswap quantity cannot be negative");
             end
             
+            poolStable = self.BasePool + self.Delta;
+            poolVolatile = self.K / (poolStable * self.P_volatile);
+
+            %temp!!!
+            if isa(token, 'double')
+                ok = 0;
+            end
+            
             if token.is_equal(self.T_stable)
-                poolStable = self.BasePool + self.Delta + quantity;
-                outputToken = self.T_volatile;
-                outputQuantity = (self.K / (poolStable-quantity)) - (self.K / poolStable);
+                outQuantity = poolVolatile - self.K / ((poolStable + quantity) * self.P_volatile );
             elseif token.is_equal(self.T_volatile)
-                poolVolatile = (self.BasePool^2 / (self.BasePool + self.Delta)) + quantity;
-                outputToken = self.T_stable;
-                outputQuantity = (self.K / (poolVolatile-quantity) - (self.K / poolVolatile));
+                outQuantity = poolStable - self.K / ((poolVolatile + quantity) * self.P_volatile);
             else
                 error("ERROR in swap()\nwrong token type");
             end

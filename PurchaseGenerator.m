@@ -10,7 +10,6 @@ classdef PurchaseGenerator < handle
         sigma                                       double
         i                                           
         WalletBalanceGenerator                      WalletBalanceGenerator
-        TotalInitialFreeTokenSupply                 double
     end
     
     methods
@@ -29,15 +28,13 @@ classdef PurchaseGenerator < handle
             generator.sigma = initialSigma;
             generator.i = 1;
             generator.WalletBalanceGenerator = walletBalanceGenerator;
-            generator.TotalInitialFreeTokenSupply = walletBalanceGenerator.TotalTokenSupply;
         end
         
-        function [token, quantity] = rndPurchase(self, totalFreeTokenSupply)
+        function [token, quantity] = rndPurchase(self, totalFreeTokenSupply, totalTokenSupply)
             % generate random tokens purchase
-            
-            % compute rate between current free tokens supply and initial 
-            % token supply
-            r = totalFreeTokenSupply / self.TotalInitialFreeTokenSupply;
+
+            % compute ratio between free and total tokens
+            r = totalFreeTokenSupply / totalTokenSupply;
             
             % compute delta
             delta = self.computeDelta();
@@ -59,11 +56,13 @@ classdef PurchaseGenerator < handle
             
             if (n < self.P(self.i))
                 token = self.Pool.T_a;
+                tokenPrice = self.Pool.getTokenPrice(self.Pool.T_a, 1);
             else
                 token = self.Pool.T_b;
+                tokenPrice = 1;
             end
-            
-            quantity = self.generateRandomQuantity(r);
+
+            quantity = self.generateRandomQuantity(r, tokenPrice);
             
             if (token.is_equal(self.Pool.T_a) && quantity > totalFreeTokenSupply)
                 quantity = totalFreeTokenSupply;
@@ -75,6 +74,7 @@ classdef PurchaseGenerator < handle
             % COMPUTE DELTA from a normal distribution
             
             normMean = 0;
+            computedSigma = self.sigma;
             
             if (self.Pool.T_a.IsStablecoin == true)
                 % get price deviation from peg
@@ -85,37 +85,45 @@ classdef PurchaseGenerator < handle
                         priceDeviation = -1;
                     end
                     % the mean of the normal distribution is moved
-                    normMean = priceDeviation * self.sigma;
+                    computedSigma = computedSigma * 10;
+                    normMean = priceDeviation * computedSigma;
                 end
-                delta = normrnd(normMean, self.sigma * 10);
-            else
-                delta = normrnd(normMean, self.sigma);
-            end         
+            end
+
+            delta = normrnd(normMean, computedSigma);
             
         end
         
-        function quantity = generateRandomQuantity(self, smoothFactor)
+        function quantity = generateRandomQuantity(self, r, tokenPrice)            
             % select a random wallet from the wallets distribution
-            randomWalletBalance = self.WalletBalanceGenerator.rndWalletBalance() * smoothFactor;
+            randomWalletBalance = ...
+                self.WalletBalanceGenerator.rndWalletBalance();
+
+            realBalance = (randomWalletBalance / tokenPrice) * r;
             
             % set sigma
-            sigmaQuantity = randomWalletBalance/100;
+            sigmaQuantity = realBalance/100;
             % if stablecoin, compute price deviation from peg
             if (self.Pool.T_a.IsStablecoin == true)
                 % get price deviation from peg
-                priceDeviation = self.Pool.T_a.PEG - self.Pool.getTokenPrice(self.Pool.T_a, 1);
+                priceDeviation = self.Pool.T_a.PEG - tokenPrice;
                 if (abs(priceDeviation) > 0.05)
                     % correct sigma
-                    sigmaQuantity = randomWalletBalance / 2;
+                    sigmaQuantity = realBalance / 5;
                 end
             end
             
-            % compute the truncated normal distribution
-            untruncated = makedist('Normal', 0, sigmaQuantity);
-            tnd = truncate(untruncated, 0, randomWalletBalance);
-            
-            % get random quantity
-            quantity = random(tnd, 1, 1);
+            if realBalance > 0
+                % compute the truncated normal distribution
+                untruncated = makedist('Normal', 0, sigmaQuantity);
+                tnd = truncate(untruncated, 0, realBalance);
+
+                % get random quantity
+                quantity = random(tnd, 1, 1);
+            else
+                quantity = 0;
+            end
+
         end
         
     end

@@ -30,18 +30,32 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             TestCase.verifyEqual(actValue, expValue);
         end
         
-        function testPoolSwapReturnedValue(TestCase)
+        function testPoolStableSwapReturnedValue(TestCase)
             T_stable = Token("TokenA");
             T_volatile = Token("TokenB");
-            BasePool = 10000;
+            BasePool = 1000;
             P_volatile = 10;
             PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
-            K = BasePool^2 * P_volatile;
-            expValue = (K / (BasePool * P_volatile)) - (K / (BasePool * P_volatile + 100));
-            [~, q] = pool.swap(T_stable, 100);
-            actValue = q;
+            K = BasePool^2;
+            expValue = K / (BasePool * P_volatile) - K / ((BasePool + 100) * P_volatile );
+            [~, actValue] = pool.swap(T_stable, 100);
+            TestCase.verifyEqual(actValue, expValue);
+        end
+
+        function testPoolVolatileSwapReturnedValue(TestCase)
+            T_stable = Token("TokenA");
+            T_volatile = Token("TokenB");
+            BasePool = 1000;
+            P_volatile = 10;
+            PoolRecoveryPeriod = 36;
+            pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
+                BasePool, PoolRecoveryPeriod);
+            K = BasePool^2;
+            poolVolatile = K / (BasePool * P_volatile);
+            expValue = BasePool - K / ((poolVolatile + 10) * P_volatile );
+            [~, actValue] = pool.swap(T_volatile, 10);
             TestCase.verifyEqual(actValue, expValue);
         end
         
@@ -69,11 +83,9 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
             PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
                 BasePool, PoolRecoveryPeriod);
-            [token, quantity] = pool.computeSwapValue(T_volatile, 1);
-            expValues = [T_stable, (BasePool^2 * P_volatile) / BasePool - ...
-                (BasePool^2 * P_volatile) / (BasePool + 1)];
-            actValues = [token, quantity];
-            TestCase.verifyEqual(actValues, expValues);
+            actValue = pool.computeSwapValue(T_volatile, 1);
+            expValue = BasePool - BasePool^2 / ((BasePool/P_volatile + 1) * P_volatile);
+            TestCase.verifyEqual(actValue, expValue);
         end
         
         function testUpdateVolatileTokenPrice(TestCase)

@@ -3,18 +3,18 @@ classdef WalletBalanceGeneratorTest < matlab.unittest.TestCase
     methods (Test)
         function testWalletDistributionInitialization(TestCase)
             C = 1000000;
-            max = 100000000;
-            distr = WalletBalanceGenerator(C, max, max/4, max/3);
+            rate = 0.1;
+            distr = WalletBalanceGenerator(C, rate);
             TestCase.verifyEqual(distr.TotalTokenSupply, C);
-            TestCase.verifyEqual(distr.Max, max);
+            TestCase.verifyEqual(distr.Rate, rate);
         end
         
         function testPlotDistribution(TestCase)
             % plot histogram of the probability distribution built from
             % a set of randomly generated wallets
             C = 1000000000;
-            max = 100000000;
-            distr = WalletBalanceGenerator(C, max, 0, max/100);
+            rate = 0.000001;
+            distr = WalletBalanceGenerator(C, rate);
             
             % choose number of random wallets to consider
             n = 100000;

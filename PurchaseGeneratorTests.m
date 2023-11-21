@@ -11,8 +11,7 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             initialTaPrice = 1;
             initialCapitalization = Q_a*initialTaPrice;
             maxAvailability = Q_a*initialTaPrice*0.33;
-            walletProbDistribution = WalletBalanceGenerator(initialCapitalization, ...
-                maxAvailability, maxAvailability/4, maxAvailability/3);
+            walletProbDistribution = WalletBalanceGenerator(initialCapitalization, 0.00000001);
             rwg = PurchaseGenerator(pool, n, 0.5, 0.001, walletProbDistribution);
             TestCase.verifyEqual(rwg.P(1), 0.5);
             TestCase.verifyEqual(rwg.sigma, 0.001);
@@ -28,10 +27,8 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             n = 100000;
             initialTaPrice = 1;
             totalTokenSupply = Q_a*initialTaPrice;
-            maxAvailability = Q_a*initialTaPrice*0.33;
             totalFreeTokenSupply = totalTokenSupply/2;
-            walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, ...
-                maxAvailability, maxAvailability/4, maxAvailability/3);
+            walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, 0.00000001);
             rwg = PurchaseGenerator(pool, n, 0.5, 0.001, walletProbDistribution);
             t = rwg.rndPurchase(totalFreeTokenSupply);
             condition = false;
@@ -50,11 +47,9 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             n = 1000;
             initialTaPrice = 1;
             totalTokenSupply = Q_a*initialTaPrice;
-            maxAvailability = Q_a*initialTaPrice*0.33;
             totalFreeTokenSupply = totalTokenSupply/2;
-            sigma = 0.01;
-            walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, ...
-                maxAvailability, maxAvailability/4, maxAvailability/3);
+            sigma = 0.0001;
+            walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, 0.00000001);
             rwg = PurchaseGenerator(pool, n, 0.5, sigma, walletProbDistribution);
             
             td = zeros(1, n);
@@ -81,10 +76,8 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             n = 1000;
             initialTaPrice = 1;
             totalTokenSupply = Q_a*initialTaPrice;
-            maxAvailability = Q_a*initialTaPrice*0.33;
             totalFreeTokenSupply = totalTokenSupply/2;
-            walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, ...
-                maxAvailability, totalTokenSupply*0.1, maxAvailability/3);
+            walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, 0.00000001);
             rwg = PurchaseGenerator(pool, n, 0.5, 0.001, walletProbDistribution);
             
             q = zeros(1, n);
