@@ -33,7 +33,7 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
         function testPoolStableSwapReturnedValue(TestCase)
             T_stable = Token("TokenA");
             T_volatile = Token("TokenB");
-            BasePool = 1000;
+            BasePool = 100000;
             P_volatile = 10;
             PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
@@ -47,7 +47,7 @@ classdef VirtualLiquidityPoolTests < matlab.unittest.TestCase
         function testPoolVolatileSwapReturnedValue(TestCase)
             T_stable = Token("TokenA");
             T_volatile = Token("TokenB");
-            BasePool = 1000;
+            BasePool = 100000;
             P_volatile = 10;
             PoolRecoveryPeriod = 36;
             pool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...

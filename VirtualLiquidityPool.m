@@ -6,7 +6,7 @@ classdef VirtualLiquidityPool < handle
         T_volatile              Token                                                            % token B type
         P_volatile              double                                                           % price of T_volatile
         Delta                   double                                                           % the difference between the current T_stable pool size and its original base size
-        K                       double                                                           % invariant : K = BasePool^2 * P_volatile
+        K                       double                                                           % invariant : K = BasePool^2
         BasePool                double {mustBeNonnegative}                                       % initial starting size of both pools
         PoolRecoveryPeriod      {mustBeNonnegative}                                              % used to bring delta to zero: e.g. if =2 will bring delta to zero every 2 blocks
         MinSpread               double {mustBeNonnegative, mustBeLessThan(MinSpread, 1)} = 0     % minimum value of the spread tax
@@ -40,7 +40,7 @@ classdef VirtualLiquidityPool < handle
                 self.updateDelta(quantity);
             elseif token.is_equal(self.T_volatile)
                 outToken = self.T_stable;
-                self.updateDelta(-outQuantity / self.P_volatile);
+                self.updateDelta(-outQuantity);
             else
                 if (self.BasePool + self.Delta + quantity) <= 0 || (poolVolatile + quantity) <= 0
                     error("ERROR in swap()\ntoken balance cannot be negative");
@@ -75,17 +75,16 @@ classdef VirtualLiquidityPool < handle
             end
             
             poolStable = self.BasePool + self.Delta;
-            poolVolatile = self.K / (poolStable * self.P_volatile);
-
-            %temp!!!
-            if isa(token, 'double')
-                ok = 0;
-            end
+            poolVolatile = self.K * (1/self.P_volatile) / (poolStable);
             
+            if (poolStable <= 0)
+                error("ERROR in swap(): PoolStable must be positive");
+            end
+
             if token.is_equal(self.T_stable)
-                outQuantity = poolVolatile - self.K / ((poolStable + quantity) * self.P_volatile );
+                outQuantity = poolVolatile - self.K * (1/self.P_volatile) / ((poolStable + quantity) );
             elseif token.is_equal(self.T_volatile)
-                outQuantity = poolStable - self.K / ((poolVolatile + quantity) * self.P_volatile);
+                outQuantity = poolStable - self.K * (1/self.P_volatile) / ((poolVolatile + quantity) );
             else
                 error("ERROR in swap()\nwrong token type");
             end

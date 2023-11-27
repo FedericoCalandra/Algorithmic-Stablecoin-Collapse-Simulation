@@ -9,9 +9,12 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             totalT_b = 1000;
             freeT_a = 100;
             freeT_b = 100;
+            baseVirutalPool = 10;
+            poolRecoveryPeriod = 10;
             Q_a = totalT_a - freeT_a;
             Q_b = totalT_b - freeT_b;
-            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, totalT_a, totalT_b, freeT_a, freeT_b, 1);
+            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1);
             actValues = [sim.PoolStable.Q_a, sim.PoolVolatile.Q_a];
             expValues = [Q_a, Q_b];
             TestCase.verifyEqual(actValues, expValues);
@@ -25,8 +28,11 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             totalT_b = 1000;
             freeT_a = 100;
             freeT_b = 100;
-            rate = 0.1;
-            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, totalT_a, totalT_b, freeT_a, freeT_b, 1, rate);
+            rate = 0.0001;
+            baseVirutalPool = 10;
+            poolRecoveryPeriod = 10;
+            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1, rate);
             w = sim.WalletDistribution_stable;
             actValues = [w.TotalTokenSupply, w.Rate];
             expValues = [totalT_a, rate];
@@ -41,7 +47,10 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             totalT_b = 1000;
             freeT_a = 100;
             freeT_b = 100;
-            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, totalT_a, totalT_b, freeT_a, freeT_b, 1);
+            baseVirutalPool = 10;
+            poolRecoveryPeriod = 10;
+            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1);
             sim.PoolStable.swap(T_a, 10);
             expFreeT_a = freeT_a - 10;
             sim.PoolVolatile.swap(T_b, 3);
@@ -57,12 +66,15 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             T_a = Token("TokenA");
             T_b = Token("TokenB");
             initialT_bPrice = 10;
-            totalT_a = 1000000;
-            totalT_b = 1000000;
-            freeT_a = 700000;
-            freeT_b = 700000;
+            totalT_a = 1000;
+            totalT_b = 1000;
+            freeT_a = 100;
+            freeT_b = 100;
+            rate = 0.0001;
+            baseVirutalPool = 10;
+            poolRecoveryPeriod = 10;
             sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
-                totalT_a, totalT_b, freeT_a, freeT_b, 1, 0.0001, 0);
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1, rate, 0);
             sim.PoolStable.swap(sim.USDC, 10000);
             y1 = sim.getArbitrageYield1(1)
             y2 = sim.getArbitrageYield2(1)
@@ -76,8 +88,11 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             totalT_b = 1000000;
             freeT_a = 700000;
             freeT_b = 700000;
+            rate = 0.0001;
+            baseVirutalPool = 10000;
+            poolRecoveryPeriod = 10;
             sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
-                totalT_a, totalT_b, freeT_a, freeT_b, 1, 0.0001, 0);
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1, rate, 0);
             sim.PoolStable.swap(sim.USDC, 12000);
 
             n = 1000;
@@ -106,8 +121,11 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             totalT_b = 1000000;
             freeT_a = 700000;
             freeT_b = 700000;
+            rate = 0.0001;
+            baseVirutalPool = 10000;
+            poolRecoveryPeriod = 10;
             sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
-                totalT_a, totalT_b, freeT_a, freeT_b, 1, 0.0001, 0);
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1, rate, 0);
             sim.PoolStable.swap(sim.USDC, 12000);
             [token, q] = sim.getQuantityRelatedToMaxYield();
             TestCase.verifyEqual(token, T_b);
@@ -122,8 +140,11 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             totalT_b = 1000000;
             freeT_a = 700000;
             freeT_b = 700000;
+            rate = 0.0001;
+            baseVirutalPool = 10000;
+            poolRecoveryPeriod = 10;
             sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
-                totalT_a, totalT_b, freeT_a, freeT_b, 1, 0.0001, 0);
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, poolRecoveryPeriod, 1, rate, 0);
             sim.PoolStable.swap(sim.USDC, 12000);
             q = sim.virtualPoolArbitrage();
             epsilon = q - 400.4129619217711;
@@ -139,8 +160,12 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             freeT_a = 700000;
             freeT_b = 700000;
             numberOfIterations = 10000;
+            rate = 0.0001;
+            baseVirutalPool = 10000;
+            poolRecoveryPeriod = 10;
             sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
-                totalT_a, totalT_b, freeT_a, freeT_b, numberOfIterations, 0.001, 0);
+                totalT_a, totalT_b, freeT_a, freeT_b, baseVirutalPool, ...
+                poolRecoveryPeriod, numberOfIterations, rate, 0);
             [P_a, P_b] = sim.runSimulation();
 
             figure;

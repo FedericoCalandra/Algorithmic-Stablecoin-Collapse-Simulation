@@ -88,10 +88,15 @@ classdef AlgorithmicStablecoinSimulation < handle
                 self.NumberOfIterations, initialProbability, self.Sigma, self.WalletDistribution_volatile);
         end
 
-        function [T_aPrices, T_bPrices, probA, probB, delta] = runSimulation(self)
+        function [T_aPrices, T_bPrices, probA, probB, delta, ...
+                totalT_aSupply, totalT_bSupply, freeT_a, freeT_b] = runSimulation(self)
             T_aPrices = zeros(self.NumberOfIterations, 1);
             T_bPrices = zeros(self.NumberOfIterations, 1);
             delta = zeros(self.NumberOfIterations, 1);
+            totalT_aSupply = zeros(self.NumberOfIterations, 1);
+            totalT_bSupply = zeros(self.NumberOfIterations, 1);
+            freeT_a = zeros(self.NumberOfIterations, 1);
+            freeT_b = zeros(self.NumberOfIterations, 1);
 
             % main loop
             for i = 1:self.NumberOfIterations
@@ -99,11 +104,19 @@ classdef AlgorithmicStablecoinSimulation < handle
                 self.stablePoolRandomPurchase();
                 self.volatilePoolRandomPurchase();
                 self.virtualPoolArbitrage();
-                self.VirtualPool.restoreDelta();    % ATTENZIONE al concetto di tempo (qui abbiamo solo transazioni)
+                self.VirtualPool.restoreDelta();                            % ATTENZIONE al concetto di tempo (qui abbiamo solo transazioni)
+                self.VirtualPool.updateVolatileTokenPrice(...
+                    self.PoolVolatile.getTokenPrice(...
+                    self.T_b, self.USDC.PEG));
+
 
                 delta(i) = self.VirtualPool.Delta;
                 T_aPrices(i) = self.PoolStable.getTokenPrice(self.T_a, self.USDC.PEG);
                 T_bPrices(i) = self.PoolVolatile.getTokenPrice(self.T_b, self.USDC.PEG);
+                totalT_aSupply(i) = self.TotalT_a;
+                totalT_bSupply(i) = self.TotalT_b;
+                freeT_a(i) = self.FreeT_a;
+                freeT_b(i) = self.FreeT_b;
 
             end
 
@@ -143,12 +156,16 @@ classdef AlgorithmicStablecoinSimulation < handle
                 if token.is_equal(self.T_a)
                     walletBalance = self.WalletDistribution_stable.rndWalletBalance();
                     [t, x] = self.PoolStable.swap(self.USDC, min(quantity, walletBalance));
+                    self.TotalT_a = self.TotalT_a - x;
                     [t, x] = self.VirtualPool.swap(t, x);
-                    [~, out] = self.PoolVolatile.swap(t, x);
+                    self.TotalT_b = self.TotalT_b + x;
+                    [~, out] = self.PoolVolatile.swap(t, x);                    
                 else
                     walletBalance = self.WalletDistribution_volatile.rndWalletBalance();
                     [t, x] = self.PoolVolatile.swap(self.USDC, min(quantity, walletBalance));
+                    self.TotalT_b = self.TotalT_b - x;
                     [t, x] = self.VirtualPool.swap(t, x);
+                    self.TotalT_a = self.TotalT_a + x;
                     [~, out] = self.PoolStable.swap(t, x);
                 end
             end
@@ -161,21 +178,23 @@ classdef AlgorithmicStablecoinSimulation < handle
             yield1 = self.getArbitrageYield1(x);
             while(yield1 > 0)
                 x = x + 1;
-                if yield1 > self.getArbitrageYield1(x)
+                newYield1 = self.getArbitrageYield1(x);
+                if yield1 > newYield1
                     q = x - 1;
                     break;
                 end
-                yield1 = self.getArbitrageYield1(x);
+                yield1 = newYield1;
             end
 
             yield2 = self.getArbitrageYield2(x);
             while(yield2 > 0)
                 x = x + 1;
-                if yield2 > self.getArbitrageYield2(x)
+                newYield2 = self.getArbitrageYield2(x);
+                if yield2 > newYield2
                     q = x - 1;
                     break;
                 end
-                yield2 = self.getArbitrageYield2(x);
+                yield2 = newYield2;
             end
 
             if(yield1 > yield2)
@@ -187,7 +206,6 @@ classdef AlgorithmicStablecoinSimulation < handle
         end
 
         function yield = getArbitrageYield1(self, quantity)
-            % quanto si può guadagnare immettendo USDC nello StablePool?
             x = self.PoolStable.computeSwapValue(self.USDC, quantity);
             y = self.VirtualPool.computeSwapValue(self.T_a, x);
             USDC_out = self.PoolVolatile.computeSwapValue(self.T_b, y);
@@ -195,7 +213,6 @@ classdef AlgorithmicStablecoinSimulation < handle
         end
 
         function yield = getArbitrageYield2(self, quantity)
-            % quanto si può guadagnare immettendo USDC nel VolatilePool?
             x = self.PoolVolatile.computeSwapValue(self.USDC, quantity);
             y = self.VirtualPool.computeSwapValue(self.T_b, x);
             USDC_out = self.PoolStable.computeSwapValue(self.T_a, y);
