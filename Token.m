@@ -4,6 +4,7 @@ classdef Token
     properties
         Name            string
         IsStablecoin    logical = false
+        IsCollateral    logical = false
         PEG             double = 1
     end
     
@@ -14,7 +15,8 @@ classdef Token
             if nargin > 1
                 token.IsStablecoin = varargin{2};
                 if nargin > 2
-                    token.PEG = varargin{3};
+                    token.IsCollateral = varargin{3};
+                    token.PEG = varargin{4};
                 end
             end
         end

@@ -16,10 +16,9 @@ virtualPool = VirtualLiquidityPool(T_stable, T_volatile, P_volatile, ...
 d = zeros(1, n + 1);
 
 % initialize wallet distribution
+walletExpRate = 0.00003;
 initialFreeTokenSupply = 3*BasePool;
-maxBalance = initialFreeTokenSupply/3;
-walletProbDistribution = WalletBalanceGenerator(initialFreeTokenSupply, ...
-    maxBalance, 0, maxBalance/100);
+walletProbDistribution = WalletBalanceGenerator(initialFreeTokenSupply, walletExpRate);
 
 % initialize the random purchaise generator
 pool = LiquidityPool(T_stable, T_volatile, 1, 1, 0);
@@ -34,7 +33,7 @@ virtualPool.resetReplenishingSystem();
 for i = 2:(n+1)
     
     if (mod(i, 100) == 0)
-        virtualPool.swap(T_volatile, 1000);
+        virtualPool.swap(T_stable, 1000);
     end
     
     d(i) = virtualPool.Delta;
@@ -83,9 +82,9 @@ for i = 2:n+1
     
     % choose if there will be a transaction in this iteration
     if (r > 0.5)
-        [token, quantity] = purchaseGenerator.rndPurchase(initialFreeTokenSupply);
+        [token, quantity] = purchaseGenerator.rndPurchase(initialFreeTokenSupply, initialFreeTokenSupply*3);
         
-        [~, q] = virtualPool.swap(token, quantity*100);
+        [~, q] = virtualPool.swap(token, quantity);
     end
     
     d(i) = virtualPool.Delta;

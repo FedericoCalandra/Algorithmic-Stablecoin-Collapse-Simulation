@@ -54,14 +54,14 @@ classdef AlgorithmicStablecoinSimulation < handle
         end
 
         function initializePools(self)
-            % create 2 pools (T_a - USDC and T_b - USDC) and one virtual
-            % pool (T_a - T_b) for the seigniorage process
+            % create 2 pools (T_a/USDC and T_b/USDC) and one virtual
+            % pool (T_a/T_b) for the seigniorage process
 
             Q_a = self.TotalT_a - self.FreeT_a;
             Q_b = self.TotalT_b - self.FreeT_b;
             Q_c = self.InitialT_bPrice * Q_b;
 
-            self.USDC = Token("USDC", true, 1);
+            self.USDC = Token("USDC", true, false, 1);
             self.PoolStable = LiquidityPool(self.T_a, self.USDC, Q_a, Q_a, self.PoolFee);
             self.PoolVolatile = LiquidityPool(self.T_b, self.USDC, Q_b, Q_c, self.PoolFee);
 
@@ -132,6 +132,13 @@ classdef AlgorithmicStablecoinSimulation < handle
             T_aInPool_old = self.PoolStable.Q_a;
             self.PoolStable.swap(token, quantity);
             self.updateFreeT_a(T_aInPool_old);
+
+            if (self.PurchaseGenerator_poolStable.CrisisScenario > 0)
+                self.PurchaseGenerator_poolVolatile.CrisisScenario = self.PurchaseGenerator_poolStable.CrisisScenario;
+            elseif (self.PurchaseGenerator_poolVolatile.CrisisScenario > 0)
+                self.PurchaseGenerator_poolVolatile.CrisisScenario = 0;
+            end
+
         end
 
         function volatilePoolRandomPurchase(self)

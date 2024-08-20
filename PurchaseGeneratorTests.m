@@ -30,7 +30,7 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             totalFreeTokenSupply = totalTokenSupply/2;
             walletProbDistribution = WalletBalanceGenerator(totalTokenSupply, 0.00000001);
             rwg = PurchaseGenerator(pool, n, 0.5, 0.001, walletProbDistribution);
-            t = rwg.rndPurchase(totalFreeTokenSupply);
+            t = rwg.rndPurchase(totalFreeTokenSupply, totalTokenSupply);
             condition = false;
             if (t.is_equal(T_a) || t.is_equal(T_b))
                 condition = true;
@@ -54,7 +54,7 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             
             td = zeros(1, n);
             for i = 1:n
-                t = rwg.rndPurchase(totalFreeTokenSupply);
+                t = rwg.rndPurchase(totalFreeTokenSupply, totalTokenSupply);
                 if t.is_equal(T_a)
                     td(i) = 0;
                 else
@@ -82,7 +82,7 @@ classdef PurchaseGeneratorTests < matlab.unittest.TestCase
             
             q = zeros(1, n);
             for j = 1:n
-                q(j) = rwg.generateRandomQuantity(totalTokenSupply/totalFreeTokenSupply);
+                q(j) = rwg.generateRandomQuantity(totalTokenSupply/totalFreeTokenSupply, initialTaPrice);
             end
             histogram(q);
         end

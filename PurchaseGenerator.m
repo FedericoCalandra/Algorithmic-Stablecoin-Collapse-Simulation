@@ -10,6 +10,7 @@ classdef PurchaseGenerator < handle
         sigma                                       double
         i                                           
         WalletBalanceGenerator                      WalletBalanceGenerator
+        CrisisScenario                              double = 0
     end
     
     methods
@@ -80,14 +81,16 @@ classdef PurchaseGenerator < handle
                 % get price deviation from peg
                 priceDeviation = self.Pool.T_a.PEG - self.Pool.getTokenPrice(self.Pool.T_a, 1);
                 
-                if (abs(priceDeviation) > 0.05)
-                    if (priceDeviation < -1)
-                        priceDeviation = -1;
-                    end
+                if (priceDeviation > 0.05)
+                    self.CrisisScenario = priceDeviation;
                     % the mean of the normal distribution is moved
                     computedSigma = computedSigma * 10;
                     normMean = priceDeviation * computedSigma;
                 end
+            elseif (self.Pool.T_a.IsCollateral == true && self.CrisisScenario > 0)
+                computedSigma = computedSigma * 10;
+                normMean =  self.CrisisScenario * self.Pool.getTokenPrice(self.Pool.T_a, ...
+                            self.Pool.T_b.PEG) * computedSigma;
             end
 
             delta = normrnd(normMean, computedSigma);
