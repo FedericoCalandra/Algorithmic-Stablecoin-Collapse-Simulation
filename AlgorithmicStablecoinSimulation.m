@@ -12,9 +12,7 @@ classdef AlgorithmicStablecoinSimulation < handle
         InitialT_bPrice                             double
         PoolStable                                  LiquidityPool
         PoolVolatile                                LiquidityPool
-        VirtualPool                                 VirtualLiquidityPool
-        BaseVirtualPool                             double
-        PoolRecoveryPeriod                          int32
+        VirtualPool                                 VirtualLiquidityPool = OriginalVirtualLiquidityPool(0, 0, 0, 0, 0)
         NumberOfIterations                          int64
         ExpRate                                     double = 0.0001
         Sigma                                       double = 0.0001
@@ -23,6 +21,7 @@ classdef AlgorithmicStablecoinSimulation < handle
         WalletDistribution_volatile                 WalletBalanceGenerator
         PurchaseGenerator_poolStable                PurchaseGenerator
         PurchaseGenerator_poolVolatile              PurchaseGenerator
+        ReserveGenerator                            ReservePurchaseGenerator
     end
 
     methods
@@ -35,22 +34,27 @@ classdef AlgorithmicStablecoinSimulation < handle
             simulation.TotalT_b = varargin{5};
             simulation.FreeT_a = varargin{6};
             simulation.FreeT_b = varargin{7};
-            simulation.BaseVirtualPool = varargin{8};
-            simulation.PoolRecoveryPeriod = varargin{9};
-            simulation.NumberOfIterations = varargin{10};
-            if nargin > 10
-                simulation.ExpRate = varargin{11};
-                if nargin > 11
-                    simulation.PoolFee = varargin{12};
-                    if nargin > 12
-                        simulation.Sigma = varargin{13};
+            simulation.VirtualPool = varargin{8};
+            simulation.NumberOfIterations = varargin{9};
+            if nargin > 9
+                simulation.ExpRate = varargin{10};
+                if nargin > 10
+                    simulation.PoolFee = varargin{11};
+                    if nargin > 11
+                        simulation.Sigma = varargin{12};
                     end
                 end
             end
-
             simulation.initializePools();
             simulation.initializeWalletDistributions(simulation.ExpRate);
             simulation.initializePurchaseGenerators();
+            if nargin > 12
+                reserves = simulation.TotalT_a * varargin{13};
+                totalUSDCReserves = reserves * 0.5;
+                totalStablecoinReserves = reserves * 0.5;
+                simulation.ReserveGenerator = ReservePurchaseGenerator(simulation.PoolStable, ...
+                    totalUSDCReserves, totalStablecoinReserves, 0.95);
+            end
         end
 
         function initializePools(self)
@@ -64,12 +68,6 @@ classdef AlgorithmicStablecoinSimulation < handle
             self.USDC = Token("USDC", true, false, 1);
             self.PoolStable = LiquidityPool(self.T_a, self.USDC, Q_a, Q_a, self.PoolFee);
             self.PoolVolatile = LiquidityPool(self.T_b, self.USDC, Q_b, Q_c, self.PoolFee);
-
-            basePool = self.BaseVirtualPool;
-            poolRecoveryPeriod = self.PoolRecoveryPeriod;
-            self.VirtualPool = VirtualLiquidityPool(self.T_a, self.T_b, ...
-                self.PoolVolatile.getTokenPrice(self.T_b, 1), basePool, ...
-                poolRecoveryPeriod);
         end
 
         function initializeWalletDistributions(self, expRate)
@@ -90,6 +88,7 @@ classdef AlgorithmicStablecoinSimulation < handle
 
         function [T_aPrices, T_bPrices, probA, probB, delta, ...
                 totalT_aSupply, totalT_bSupply, freeT_a, freeT_b] = runSimulation(self)
+
             T_aPrices = zeros(self.NumberOfIterations, 1);
             T_bPrices = zeros(self.NumberOfIterations, 1);
             delta = zeros(self.NumberOfIterations, 1);
@@ -104,10 +103,14 @@ classdef AlgorithmicStablecoinSimulation < handle
                 self.stablePoolRandomPurchase();
                 self.volatilePoolRandomPurchase();
                 self.virtualPoolArbitrage();
-                self.VirtualPool.restoreDelta();                            % ATTENZIONE al concetto di tempo (qui abbiamo solo transazioni)
+                self.VirtualPool.restoreDelta(self.PoolStable.getTokenPrice(self.T_a, self.USDC.PEG));      % ATTENZIONE al concetto di tempo (qui abbiamo solo transazioni)
                 self.VirtualPool.updateVolatileTokenPrice(...
                     self.PoolVolatile.getTokenPrice(...
                     self.T_b, self.USDC.PEG));
+
+                if ~isempty(self.ReserveGenerator)
+                    self.ReserveGenerator.reserveIntervention();
+                end
 
 
                 delta(i) = self.VirtualPool.Delta;
@@ -133,6 +136,8 @@ classdef AlgorithmicStablecoinSimulation < handle
             self.PoolStable.swap(token, quantity);
             self.updateFreeT_a(T_aInPool_old);
 
+            % exchange information about the crisis scenario between
+            % purchase generators
             if (self.PurchaseGenerator_poolStable.CrisisScenario > 0)
                 self.PurchaseGenerator_poolVolatile.CrisisScenario = self.PurchaseGenerator_poolStable.CrisisScenario;
             elseif (self.PurchaseGenerator_poolVolatile.CrisisScenario > 0)
@@ -166,7 +171,7 @@ classdef AlgorithmicStablecoinSimulation < handle
                     self.TotalT_a = self.TotalT_a - x;
                     [t, x] = self.VirtualPool.swap(t, x);
                     self.TotalT_b = self.TotalT_b + x;
-                    [~, out] = self.PoolVolatile.swap(t, x);                    
+                    [~, out] = self.PoolVolatile.swap(t, x);
                 else
                     walletBalance = self.WalletDistribution_volatile.rndWalletBalance();
                     [t, x] = self.PoolVolatile.swap(self.USDC, min(quantity, walletBalance));
@@ -181,27 +186,18 @@ classdef AlgorithmicStablecoinSimulation < handle
         function [token, quantity] = getQuantityRelatedToMaxYield(self)
             x = 1;
             q = 0;
+            options = optimset('Display', 'off');
 
             yield1 = self.getArbitrageYield1(x);
-            while(yield1 > 0)
-                x = x + 1;
-                newYield1 = self.getArbitrageYield1(x);
-                if yield1 > newYield1
-                    q = x - 1;
-                    break;
-                end
-                yield1 = newYield1;
+            if (yield1 > 0)
+                q = fminsearch(@(x) (-1)*self.getArbitrageYield1(x), ...
+                    1, options);
             end
 
             yield2 = self.getArbitrageYield2(x);
-            while(yield2 > 0)
-                x = x + 1;
-                newYield2 = self.getArbitrageYield2(x);
-                if yield2 > newYield2
-                    q = x - 1;
-                    break;
-                end
-                yield2 = newYield2;
+            if (yield2 > 0)
+                q = fminsearch(@(x) (-1)*self.getArbitrageYield2(x), ...
+                    1, options);
             end
 
             if(yield1 > yield2)
@@ -226,6 +222,20 @@ classdef AlgorithmicStablecoinSimulation < handle
             yield = USDC_out - quantity;
         end
 
+        function yield = getNegativeArbitrageYield1(self, quantity)
+            x = self.PoolStable.computeSwapValue(self.USDC, quantity);
+            y = self.VirtualPool.computeSwapValue(self.T_a, x);
+            USDC_out = self.PoolVolatile.computeSwapValue(self.T_b, y);
+            yield = -(USDC_out - quantity);
+        end
+
+        function yield = getNegativeArbitrageYield2(self, quantity)
+            x = self.PoolVolatile.computeSwapValue(self.USDC, quantity);
+            y = self.VirtualPool.computeSwapValue(self.T_b, x);
+            USDC_out = self.PoolStable.computeSwapValue(self.T_a, y);
+            yield = -(USDC_out - quantity);
+        end
+
         function updateFreeT_a(self, Q_a_prev)
             self.FreeT_a = self.FreeT_a - (self.PoolStable.Q_a - Q_a_prev);
         end
@@ -235,5 +245,6 @@ classdef AlgorithmicStablecoinSimulation < handle
         end
 
     end
+
 end
 

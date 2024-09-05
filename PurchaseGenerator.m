@@ -86,11 +86,11 @@ classdef PurchaseGenerator < handle
                     % the mean of the normal distribution is moved
                     computedSigma = computedSigma * 10;
                     normMean = priceDeviation * computedSigma;
+                else
+                    self.CrisisScenario = 0;
                 end
             elseif (self.Pool.T_a.IsCollateral == true && self.CrisisScenario > 0)
-                computedSigma = computedSigma * 10;
-                normMean =  self.CrisisScenario * self.Pool.getTokenPrice(self.Pool.T_a, ...
-                            self.Pool.T_b.PEG) * computedSigma;
+                normMean =  self.CrisisScenario * computedSigma; % * self.Pool.getTokenPrice(self.Pool.T_a, self.Pool.T_b.PEG);
             end
 
             delta = normrnd(normMean, computedSigma);
@@ -106,14 +106,9 @@ classdef PurchaseGenerator < handle
             
             % set sigma
             sigmaQuantity = realBalance/100;
-            % if stablecoin, compute price deviation from peg
-            if (self.Pool.T_a.IsStablecoin == true)
-                % get price deviation from peg
-                priceDeviation = self.Pool.T_a.PEG - tokenPrice;
-                if (abs(priceDeviation) > 0.05)
-                    % correct sigma
-                    sigmaQuantity = realBalance / 5;
-                end
+            % compute price deviation from peg
+            if (self.CrisisScenario > 0)
+                sigmaQuantity = realBalance / 50;
             end
             
             if realBalance > 0
