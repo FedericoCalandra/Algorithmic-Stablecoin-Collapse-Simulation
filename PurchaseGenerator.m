@@ -123,6 +123,10 @@ classdef PurchaseGenerator < handle
             end
 
         end
+
+        function setNewSigma(self, newSigma)
+            self.sigma = newSigma;
+        end
         
     end
 end

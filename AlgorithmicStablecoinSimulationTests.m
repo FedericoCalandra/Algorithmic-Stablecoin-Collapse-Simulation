@@ -197,14 +197,14 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             freeT_b = 700000;
             numberOfIterations = 10000;
             rate = 0.0001;
-            sigma = 0.001;
+            sigma = 0.0001;
 
             baseVirutalPool = 10000;
             poolRecoveryPeriod = 10;
             virtualPool = ImprovedVirtualLiquidityPool(T_a, T_b, initialT_bPrice, baseVirutalPool, poolRecoveryPeriod);
 
             totalReserves = totalT_a * 0.2;
-            
+
             sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
                 totalT_a, totalT_b, freeT_a, freeT_b, virtualPool, numberOfIterations, ...
                 rate, 0, sigma, totalReserves);
@@ -252,6 +252,50 @@ classdef AlgorithmicStablecoinSimulationTests < matlab.unittest.TestCase
             fprintf('getQuantityRelatedToMaxYieldImproved executed in %.6f seconds.\n', elapsedTime);
             fprintf('Returned token: %s\n', token.Name);
             fprintf('Returned quantity: %.2f\n', q);
+        end
+
+        function testVolatilityChange(TestCase)
+            T_a = Token("TokenA", true, false, 1);
+            T_b = Token("TokenB");
+            initialT_bPrice = 10;
+            totalT_a = 1000000;
+            totalT_b = 1000000;
+            freeT_a = 700000;
+            freeT_b = 700000;
+            numberOfIterations = 10000;
+            rate = 0.0001;
+            sigma = 0.000001:0.000001:0.01;
+
+            baseVirutalPool = 10000;
+            poolRecoveryPeriod = 10;
+            virtualPool = ImprovedVirtualLiquidityPool(T_a, T_b, initialT_bPrice, baseVirutalPool, poolRecoveryPeriod);
+
+            sim = AlgorithmicStablecoinSimulation(T_a, T_b, initialT_bPrice, ...
+                totalT_a, totalT_b, freeT_a, freeT_b, virtualPool, numberOfIterations, ...
+                rate, 0, sigma(1));
+            sim.setVolatilityArray(sigma);
+            [P_a, P_b, probA, probB] = sim.runSimulation();
+
+            figure;
+            plot(P_a);
+            title('T_a price');
+            xlabel('Iterations');
+            ylabel('Price');
+            figure;
+            plot(P_b);
+            title('T_b price');
+            xlabel('Iterations');
+            ylabel('Price');
+            figure;
+            plot(probA);
+            title('T_a sell prob');
+            xlabel('Iterations');
+            ylabel('Probability');
+            figure;
+            plot(probB);
+            title('T_b sell prob');
+            xlabel('Iterations');
+            ylabel('Probability');
         end
 
     end

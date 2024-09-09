@@ -22,6 +22,7 @@ classdef AlgorithmicStablecoinSimulation < handle
         PurchaseGenerator_poolStable                PurchaseGenerator
         PurchaseGenerator_poolVolatile              PurchaseGenerator
         ReserveGenerator                            ReservePurchaseGenerator
+        VolatilityArray                             double
     end
 
     methods
@@ -112,6 +113,9 @@ classdef AlgorithmicStablecoinSimulation < handle
                     self.ReserveGenerator.reserveIntervention();
                 end
 
+                if ~isempty(self.VolatilityArray)
+                    self.updateVolatility(self.VolatilityArray(i));
+                end
 
                 delta(i) = self.VirtualPool.Delta;
                 T_aPrices(i) = self.PoolStable.getTokenPrice(self.T_a, self.USDC.PEG);
@@ -242,6 +246,18 @@ classdef AlgorithmicStablecoinSimulation < handle
 
         function updateFreeT_b(self, Q_b_prev)
             self.FreeT_b = self.FreeT_b - (self.PoolVolatile.Q_a - Q_b_prev);
+        end
+
+        function setVolatilityArray(self, sigma)
+            if length(sigma) ~= self.NumberOfIterations
+                error("VolatilityArray length must be equal to NumberOfIteration");
+            end
+            self.VolatilityArray = sigma;
+        end
+
+        function updateVolatility(self, sigma)
+            self.PurchaseGenerator_poolStable.setNewSigma(sigma);
+            self.PurchaseGenerator_poolVolatile.setNewSigma(sigma);
         end
 
     end
