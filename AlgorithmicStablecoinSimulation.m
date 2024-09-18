@@ -213,31 +213,25 @@ classdef AlgorithmicStablecoinSimulation < handle
         end
 
         function yield = getArbitrageYield1(self, quantity)
-            x = self.PoolStable.computeSwapValue(self.USDC, quantity);
-            y = self.VirtualPool.computeSwapValue(self.T_a, x);
-            USDC_out = self.PoolVolatile.computeSwapValue(self.T_b, y);
-            yield = USDC_out - quantity;
+            if quantity > 0
+                x = self.PoolStable.computeSwapValue(self.USDC, quantity);
+                y = self.VirtualPool.computeSwapValue(self.T_a, x);
+                USDC_out = self.PoolVolatile.computeSwapValue(self.T_b, y);
+                yield = USDC_out - quantity;
+            else
+                yield = 0;
+            end
         end
 
         function yield = getArbitrageYield2(self, quantity)
-            x = self.PoolVolatile.computeSwapValue(self.USDC, quantity);
-            y = self.VirtualPool.computeSwapValue(self.T_b, x);
-            USDC_out = self.PoolStable.computeSwapValue(self.T_a, y);
-            yield = USDC_out - quantity;
-        end
-
-        function yield = getNegativeArbitrageYield1(self, quantity)
-            x = self.PoolStable.computeSwapValue(self.USDC, quantity);
-            y = self.VirtualPool.computeSwapValue(self.T_a, x);
-            USDC_out = self.PoolVolatile.computeSwapValue(self.T_b, y);
-            yield = -(USDC_out - quantity);
-        end
-
-        function yield = getNegativeArbitrageYield2(self, quantity)
-            x = self.PoolVolatile.computeSwapValue(self.USDC, quantity);
-            y = self.VirtualPool.computeSwapValue(self.T_b, x);
-            USDC_out = self.PoolStable.computeSwapValue(self.T_a, y);
-            yield = -(USDC_out - quantity);
+            if quantity > 0
+                x = self.PoolVolatile.computeSwapValue(self.USDC, quantity);
+                y = self.VirtualPool.computeSwapValue(self.T_b, x);
+                USDC_out = self.PoolStable.computeSwapValue(self.T_a, y);
+                yield = USDC_out - quantity;
+            else
+                yield = 0;
+            end
         end
 
         function updateFreeT_a(self, Q_a_prev)
