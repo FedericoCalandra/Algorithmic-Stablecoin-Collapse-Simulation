@@ -15,7 +15,7 @@ classdef ImprovedVirtualLiquidityPool < VirtualLiquidityPool
         function restoreDelta(self, stablecoinPrice)
             % update delta value
 
-            values = flip(0.9:0.01:0.99);
+            values = flip(0.95:0.005:0.995);
             newRestoreValuesLength = self.PoolRecoveryPeriod;
             for i = 1:length(values)
                 if (stablecoinPrice > values(i))

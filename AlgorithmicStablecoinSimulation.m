@@ -103,8 +103,14 @@ classdef AlgorithmicStablecoinSimulation < handle
 
                 self.stablePoolRandomPurchase();
                 self.volatilePoolRandomPurchase();
+
                 self.virtualPoolArbitrage();
-                self.VirtualPool.restoreDelta(self.PoolStable.getTokenPrice(self.T_a, self.USDC.PEG));      % ATTENZIONE al concetto di tempo (qui abbiamo solo transazioni)
+
+                if (i == 0) && self.VirtualPool.Delta > 0
+                    disp("STOP");
+                end
+
+                self.VirtualPool.restoreDelta(self.PoolStable.getTokenPrice(self.T_a, self.USDC.PEG));      
                 self.VirtualPool.updateVolatileTokenPrice(...
                     self.PoolVolatile.getTokenPrice(...
                     self.T_b, self.USDC.PEG));

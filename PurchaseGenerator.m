@@ -90,7 +90,7 @@ classdef PurchaseGenerator < handle
                     self.CrisisScenario = 0;
                 end
             elseif (self.Pool.T_a.IsCollateral == true && self.CrisisScenario > 0)
-                normMean =  self.CrisisScenario * computedSigma; % * self.Pool.getTokenPrice(self.Pool.T_a, self.Pool.T_b.PEG);
+                normMean =  self.CrisisScenario * computedSigma;
             end
 
             delta = normrnd(normMean, computedSigma);
@@ -105,10 +105,16 @@ classdef PurchaseGenerator < handle
             realBalance = (randomWalletBalance / tokenPrice) * r;
             
             % set sigma
-            sigmaQuantity = realBalance/100;
+            if self.Pool.T_a.IsCollateral == true
+                sigmaQuantity = realBalance;
+                sigmaQuantity = sigmaQuantity * self.sigma*10000;
+            else
+                sigmaQuantity = realBalance/100;
+                sigmaQuantity = sigmaQuantity * self.sigma*10000;
+            end
             % compute price deviation from peg
             if (self.CrisisScenario > 0)
-                sigmaQuantity = realBalance / 50;
+                sigmaQuantity = realBalance / 5;
             end
             
             if realBalance > 0
