@@ -50,11 +50,11 @@ classdef AlgorithmicStablecoinSimulation < handle
             simulation.initializeWalletDistributions(simulation.ExpRate);
             simulation.initializePurchaseGenerators();
             if nargin > 12
-                reserves = simulation.TotalT_a * varargin{13};
+                reserves = varargin{13};
                 totalUSDCReserves = reserves * 0.5;
                 totalStablecoinReserves = reserves * 0.5;
                 simulation.ReserveGenerator = ReservePurchaseGenerator(simulation.PoolStable, ...
-                    totalUSDCReserves, totalStablecoinReserves, 0.95);
+                    totalUSDCReserves, totalStablecoinReserves, [0.98, 1.02]);
             end
         end
 
@@ -88,7 +88,8 @@ classdef AlgorithmicStablecoinSimulation < handle
         end
 
         function [T_aPrices, T_bPrices, probA, probB, delta, ...
-                totalT_aSupply, totalT_bSupply, freeT_a, freeT_b] = runSimulation(self)
+                totalT_aSupply, totalT_bSupply, ...
+                freeT_a, freeT_b, USDCReserveAmount] = runSimulation(self)
 
             T_aPrices = zeros(self.NumberOfIterations, 1);
             T_bPrices = zeros(self.NumberOfIterations, 1);
@@ -97,6 +98,7 @@ classdef AlgorithmicStablecoinSimulation < handle
             totalT_bSupply = zeros(self.NumberOfIterations, 1);
             freeT_a = zeros(self.NumberOfIterations, 1);
             freeT_b = zeros(self.NumberOfIterations, 1);
+            USDCReserveAmount = zeros(self.NumberOfIterations, 1);
 
             % main loop
             for i = 1:self.NumberOfIterations
@@ -106,10 +108,6 @@ classdef AlgorithmicStablecoinSimulation < handle
 
                 self.virtualPoolArbitrage();
 
-                if (i == 0) && self.VirtualPool.Delta > 0
-                    disp("STOP");
-                end
-
                 self.VirtualPool.restoreDelta(self.PoolStable.getTokenPrice(self.T_a, self.USDC.PEG));      
                 self.VirtualPool.updateVolatileTokenPrice(...
                     self.PoolVolatile.getTokenPrice(...
@@ -117,6 +115,7 @@ classdef AlgorithmicStablecoinSimulation < handle
 
                 if ~isempty(self.ReserveGenerator)
                     self.ReserveGenerator.reserveIntervention();
+                    USDCReserveAmount(i) = self.ReserveGenerator.TotalUSDCReserves;
                 end
 
                 if ~isempty(self.VolatilityArray)

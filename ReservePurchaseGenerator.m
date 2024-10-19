@@ -3,7 +3,7 @@ classdef ReservePurchaseGenerator < handle
         PoolStable                                      LiquidityPool
         TotalUSDCReserves                               double
         TotalStablecoinReserves                         double
-        ThresholdIntervention                           double = 0.95
+        ThresholdIntervention                           double = [0.95, 1]
     end
 
     methods
@@ -21,13 +21,13 @@ classdef ReservePurchaseGenerator < handle
 
             % Price under the peg intervention
             if (self.PoolStable.getTokenPrice(T_a, USDC.PEG) < ...
-                    T_a.PEG * self.ThresholdIntervention)
+                    T_a.PEG * self.ThresholdIntervention(1))
                 pool = self.PoolStable;
-                sellQuantity = self.computeSellT_bQuantity(pool, ...
-                    self.ThresholdIntervention);
-                if (self.TotalUSDCReserves - sellQuantity > 0)
-                    [~, quantity] = pool.swap(USDC, sellQuantity);
-                    self.TotalUSDCReserves = self.TotalUSDCReserves - sellQuantity;
+                T_bSellQuantity = self.computeSellT_bQuantity(pool, ...
+                    self.ThresholdIntervention(1));
+                if (self.TotalUSDCReserves - T_bSellQuantity > 0)
+                    [~, quantity] = pool.swap(USDC, T_bSellQuantity);
+                    self.TotalUSDCReserves = self.TotalUSDCReserves - T_bSellQuantity;
                 else
                     [~, quantity] = pool.swap(USDC, self.TotalUSDCReserves);
                     self.TotalUSDCReserves = 0;
@@ -36,12 +36,12 @@ classdef ReservePurchaseGenerator < handle
             end
 
             % Price above the peg intervention
-            if (self.PoolStable.getTokenPrice(T_a, USDC.PEG) > T_a.PEG)
+            if (self.PoolStable.getTokenPrice(T_a, USDC.PEG) > self.ThresholdIntervention(2))
                 pool = self.PoolStable;
-                buyQuantity = self.computeSellT_aQuantity(pool);
-                if (self.TotalStablecoinReserves - buyQuantity > 0)
-                    [~, quantity] = pool.swap(T_a, buyQuantity);
-                    self.TotalStablecoinReserves = self.TotalStablecoinReserves - buyQuantity;
+                T_aSellQuantity = self.computeSellT_aQuantity(pool, self.ThresholdIntervention(2));
+                if (self.TotalStablecoinReserves - T_aSellQuantity > 0)
+                    [~, quantity] = pool.swap(T_a, T_aSellQuantity);
+                    self.TotalStablecoinReserves = self.TotalStablecoinReserves - T_aSellQuantity;
                 else
                     [~, quantity] = pool.swap(T_a, self.TotalStablecoinReserves);
                     self.TotalStablecoinReserves = 0;
@@ -56,10 +56,12 @@ classdef ReservePurchaseGenerator < handle
             quantity = (pool.K / targetQ_a) - pool.Q_b;
         end
 
-        function quantity = computeSellT_aQuantity(~, pool) 
-            quantity = sqrt(pool.K) - pool.Q_a;
+        function quantity = computeSellT_aQuantity(~, pool, targetT_aPrice)
+            targetQ_a = (sqrt((targetT_aPrice + 4*pool.K) / ...
+                targetT_aPrice) - 1) / 2;
+            quantity = targetQ_a - pool.Q_a;
         end
-   
+
     end
 end
 
